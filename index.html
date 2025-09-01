@@ -5,12 +5,11 @@
   <title>Dino Game Clone</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { background: #f7f7f7; overflow: hidden; font-family: sans-serif; }
+    body { background: #f7f7f7; font-family: sans-serif; }
 
     #gameArea {
-      position: absolute;
-      top: 50%; left: 50%;
-      transform: translate(-50%, -50%);
+      position: relative;
+      margin: 50px auto;
       width: 800px;
       height: 200px;
       background: #fff;
@@ -22,21 +21,25 @@
       position: absolute;
       bottom: 0;
       width: 100%;
-      height: 2px;
+      height: 4px;
       background: #999;
     }
 
     #dino {
       position: absolute;
-      bottom: 2px;
+      bottom: 4px;
       left: 50px;
-      font-size: 36px;
+      width: 40px;
+      height: 40px;
+      background: url('https://i.imgur.com/4AiXzf8.png') no-repeat center/contain;
     }
 
     .obstacle {
       position: absolute;
-      bottom: 2px;
-      font-size: 32px;
+      bottom: 4px;
+      width: 25px;
+      height: 40px;
+      background: url('https://i.imgur.com/8bKQXkT.png') no-repeat center/contain;
     }
 
     #score {
@@ -45,13 +48,14 @@
       right: 20px;
       font-size: 20px;
       color: #333;
+      font-weight: bold;
     }
   </style>
 </head>
 <body>
   <div id="gameArea">
     <div id="score">00000</div>
-    <div id="dino">🦖</div>
+    <div id="dino"></div>
     <div id="ground"></div>
   </div>
 
@@ -59,33 +63,29 @@
     const dino = document.getElementById('dino');
     const gameArea = document.getElementById('gameArea');
     const scoreEl = document.getElementById('score');
-    let isJumping = false, score = 0, obstacles = [], speed = 5;
+    let isJumping = false, score = 0, obstacles = [], speed = 6;
+    let gravity = 0.9, velocity = 0, position = 4;
 
     function jump() {
       if (isJumping) return;
       isJumping = true;
-      let up = 0;
-      const upInterval = setInterval(() => {
-        if (up >= 80) {
-          clearInterval(upInterval);
-          const downInterval = setInterval(() => {
-            if (up <= 0) {
-              clearInterval(downInterval);
-              isJumping = false;
-            }
-            up -= 5;
-            dino.style.bottom = (2 + up) + 'px';
-          }, 20);
+      velocity = -12;
+
+      const jumpInterval = setInterval(() => {
+        velocity += gravity;
+        position -= velocity;
+        if (position <= 4) {
+          position = 4;
+          clearInterval(jumpInterval);
+          isJumping = false;
         }
-        up += 5;
-        dino.style.bottom = (2 + up) + 'px';
+        dino.style.bottom = position + 'px';
       }, 20);
     }
 
     function createObstacle() {
       const obstacle = document.createElement('div');
       obstacle.classList.add('obstacle');
-      obstacle.innerText = '🌵';
       obstacle.style.left = '800px';
       gameArea.appendChild(obstacle);
       obstacles.push(obstacle);
@@ -94,7 +94,7 @@
     function moveObstacles() {
       obstacles.forEach((obs, i) => {
         let left = parseInt(obs.style.left);
-        if (left < -40) {
+        if (left < -30) {
           obs.remove();
           obstacles.splice(i, 1);
           score += 10;
@@ -102,19 +102,21 @@
         } else {
           obs.style.left = (left - speed) + 'px';
 
-          // collision hitbox : entre 50-90px et bas du dino < 42px
-          if (left < 90 && left > 50 && parseInt(dino.style.bottom) < 42) {
-            alert('Game Over!\nScore: ' + score);
+          // collision
+          const dinoBottom = parseInt(dino.style.bottom);
+          if (left < 90 && left > 50 && dinoBottom < 40) {
+            clearInterval(gameLoop);
+            alert('💀 Game Over !\nScore: ' + score);
             location.reload();
           }
         }
       });
     }
 
-    setInterval(() => {
+    const gameLoop = setInterval(() => {
       if (Math.random() < 0.02) createObstacle();
       moveObstacles();
-      speed += 0.001; // vitesse progressive
+      speed += 0.001;
     }, 20);
 
     document.addEventListener('keydown', e => {
